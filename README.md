@@ -58,8 +58,12 @@ The frontend is built with Next.js and is located in the `ui/` directory.
 ```bash
 cd ui
 npm install
+cp .env.example .env.local
 npm run dev
 ```
+
+The UI reads `NEXT_PUBLIC_API_URL` from `ui/.env.local` when proxying API
+requests. The example points to the local Go API at `http://localhost:7700`.
 
 ### API
 The backend is a Go application that serves a REST API on port 7700.
