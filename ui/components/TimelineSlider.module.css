@@ -1,0 +1,79 @@
+.wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 24px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.label {
+  font-size: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.track {
+  flex: 1;
+  position: relative;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.rail {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--surface-3);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  background: var(--accent-grad);
+  border-radius: 99px;
+  transition: width var(--transition-base);
+}
+
+.dot {
+  position: absolute;
+  transform: translateX(-50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--surface-3);
+  background: var(--surface-2);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  outline: none;
+  z-index: 2;
+}
+
+.dot:hover {
+  background: var(--accent-1);
+  border-color: var(--accent-1);
+  transform: translateX(-50%) scale(1.4);
+  box-shadow: var(--accent-glow);
+}
+
+.dotActive {
+  background: var(--accent-1) !important;
+  border-color: white !important;
+  transform: translateX(-50%) scale(1.5) !important;
+  box-shadow: var(--accent-glow) !important;
+  animation: pulse-dot 2s infinite;
+}
+
+.badge {
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
