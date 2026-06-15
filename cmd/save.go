@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"fmt"
 	"eko/internal/db"
 	"eko/internal/snapshot"
+	"fmt"
 
 	"github.com/spf13/cobra"
 )
@@ -25,6 +25,7 @@ used with the restore command to revert to this state.`,
   # View history, then restore to a prior snapshot
   eko history
   eko restore <snapshot-id>`,
+	PreRunE: requireInitialized,
 	Run: func(cmd *cobra.Command, args []string) {
 		id, path, err := snapshot.CreateSnapshot()
 		if err != nil {

@@ -1,17 +1,18 @@
 package cmd
 
 import (
-	"fmt"
 	"eko/internal/db"
 	"eko/internal/snapshot"
+	"fmt"
 
 	"github.com/spf13/cobra"
 )
 
 var restoreCmd = &cobra.Command{
-	Use:   "restore [id]",
-	Short: "Restore snapshot",
-	Args:  cobra.ExactArgs(1),
+	Use:     "restore [id]",
+	Short:   "Restore snapshot",
+	Args:    cobra.ExactArgs(1),
+	PreRunE: requireInitialized,
 	Run: func(cmd *cobra.Command, args []string) {
 		id := args[0]
 		database := db.InitDB()
