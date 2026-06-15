@@ -16,9 +16,14 @@ This compiles a single binary `eko` containing both the CLI commands and the nat
    (cd ui && npm run build)
    ```
 2. Build the Go binary (requires Go, but does not require the Wails CLI):
-   ```bash
-   go build -o eko .
-   ```
+   - **On macOS**:
+     ```bash
+     CGO_LDFLAGS="-framework UniformTypeIdentifiers" go build -tags desktop,production -o eko .
+     ```
+   - **On Windows / Linux**:
+     ```bash
+     go build -tags desktop,production -o eko .
+     ```
    *You can now run `./eko ui` or any other CLI command directly from this single binary.*
 
 ### Option B: Native macOS App Bundle
