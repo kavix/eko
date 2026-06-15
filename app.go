@@ -72,6 +72,15 @@ func (a *WailsApp) ListSnapshots() ([]FrontendSnapshot, error) {
 	return snapshots, nil
 }
 
+// GetProjectName returns the base name of the current workspace directory.
+func (a *WailsApp) GetProjectName() (string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return "eko", nil
+	}
+	return filepath.Base(wd), nil
+}
+
 // GetSnapshot returns metadata of a single snapshot.
 func (a *WailsApp) GetSnapshot(id string) (*api.SnapshotRecord, error) {
 	var rec api.SnapshotRecord

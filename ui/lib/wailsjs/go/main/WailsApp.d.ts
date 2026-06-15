@@ -7,6 +7,8 @@ export function DiffSnapshots(arg1:string,arg2:string):Promise<Array<api.DiffFil
 
 export function GetSnapshot(arg1:string):Promise<api.SnapshotRecord>;
 
+export function GetProjectName():Promise<string>;
+
 export function ListSnapshots():Promise<Array<main.FrontendSnapshot>>;
 
 export function RestoreSnapshot(arg1:string):Promise<Record<string, string>>;

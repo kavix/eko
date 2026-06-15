@@ -10,6 +10,10 @@ export function GetSnapshot(arg1) {
   return window['go']['main']['WailsApp']['GetSnapshot'](arg1);
 }
 
+export function GetProjectName() {
+  return window['go']['main']['WailsApp']['GetProjectName']();
+}
+
 export function ListSnapshots() {
   return window['go']['main']['WailsApp']['ListSnapshots']();
 }
