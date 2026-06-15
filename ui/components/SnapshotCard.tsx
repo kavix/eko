@@ -23,10 +23,21 @@ export default function SnapshotCard({
   snapshot, index, isSelected, onSelect, onDiff, onRestore,
 }: Props) {
   const [hovered, setHovered] = useState(false);
-
+  const [copied, setCopied] = useState(false);
   const time = new Date(snapshot.createdAt).toLocaleTimeString([], {
     hour: "2-digit", minute: "2-digit",
   });
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    await navigator.clipboard.writeText(snapshot.id);
+
+    setCopied(true);
+
+    setTimeout(() => {
+      setCopied(false);
+    }, 1500);
+  };
 
   return (
     <div
@@ -56,6 +67,13 @@ export default function SnapshotCard({
 
         <div className={styles.idRow}>
           <code className={styles.idChip}>#{snapshot.id}</code>
+
+          <button
+            className="btn btn-ghost"
+            onClick={handleCopy}
+          >
+            {copied ? "Copied!" : "Copy"}
+          </button>
         </div>
 
         {/* Actions — slide in on hover/select */}
