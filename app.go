@@ -1,4 +1,4 @@
-//go:build !no_gui
+
 
 package main
 
