@@ -9,6 +9,8 @@ before:
 builds:
   - env:
       - CGO_ENABLED=1
+    tags:
+      - no_gui
     goos:
       - linux
       - windows
@@ -34,6 +36,17 @@ archives:
 
 checksum:
   name_template: 'checksums.txt'
+
+brews:
+  - name: eko
+    repository:
+      owner: kavix
+      name: homebrew-tap
+    directory: Formula
+    homepage: "https://github.com/kavix/eko"
+    description: "Eko: AI-powered snapshot versioning CLI"
+    install: |
+      bin.install "eko"
 
 snapshot:
   name_template: "{{ incpatch .Version }}-next"

@@ -16,12 +16,12 @@ func chdir(t *testing.T, dir string) {
 	}
 }
 
-// setupProject creates a temp project directory with a .vibe/snapshots subtree
+// setupProject creates a temp project directory with a .eko/snapshots subtree
 // and some source files, then chdirs into it.
 func setupProject(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".vibe", "snapshots"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".eko", "snapshots"), 0755)
 	os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main"), 0644)
 	os.WriteFile(filepath.Join(dir, "README.md"), []byte("# project"), 0644)
 	chdir(t, dir)
@@ -108,8 +108,8 @@ func TestCreateSnapshot_filesAreCopied(t *testing.T) {
 	}
 }
 
-// TestCreateSnapshot_vibeNotCopied ensures .vibe is excluded from the snapshot.
-func TestCreateSnapshot_vibeNotCopied(t *testing.T) {
+// TestCreateSnapshot_ekoNotCopied ensures .eko is excluded from the snapshot.
+func TestCreateSnapshot_ekoNotCopied(t *testing.T) {
 	dir := setupProject(t)
 
 	_, snapPath, err := CreateSnapshot()
@@ -118,9 +118,9 @@ func TestCreateSnapshot_vibeNotCopied(t *testing.T) {
 	}
 
 	full := filepath.Join(dir, snapPath)
-	vibeInSnap := filepath.Join(full, ".vibe")
-	if _, err := os.Stat(vibeInSnap); !os.IsNotExist(err) {
-		t.Error(".vibe directory should not be copied into snapshot")
+	ekoInSnap := filepath.Join(full, ".eko")
+	if _, err := os.Stat(ekoInSnap); !os.IsNotExist(err) {
+		t.Error(".eko directory should not be copied into snapshot")
 	}
 }
 
@@ -180,8 +180,8 @@ func TestRestoreSnapshot_removesExtraFiles(t *testing.T) {
 	}
 }
 
-// TestRestoreSnapshot_preservesVibe checks that .vibe is never removed during restore.
-func TestRestoreSnapshot_preservesVibe(t *testing.T) {
+// TestRestoreSnapshot_preservesEko checks that .eko is never removed during restore.
+func TestRestoreSnapshot_preservesEko(t *testing.T) {
 	dir := setupProject(t)
 
 	_, snapPath, err := CreateSnapshot()
@@ -194,7 +194,7 @@ func TestRestoreSnapshot_preservesVibe(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := os.Stat(filepath.Join(dir, ".vibe")); os.IsNotExist(err) {
-		t.Error(".vibe directory should be preserved after RestoreSnapshot")
+	if _, err := os.Stat(filepath.Join(dir, ".eko")); os.IsNotExist(err) {
+		t.Error(".eko directory should be preserved after RestoreSnapshot")
 	}
 }

@@ -3,108 +3,41 @@
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
-  border-right: 1px solid var(--border);
+  background: var(--bg);
 }
 
+/* ── Header ──────────────────────────────── */
 .header {
-  padding: 20px 20px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: var(--header-h);
   border-bottom: 1px solid var(--border);
-  background: var(--surface);
   flex-shrink: 0;
+  background: var(--bg);
 }
 
-.title {
+.headerLeft {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 12px;
 }
 
-.heading {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.02em;
-}
-
-.search {
-  width: 100%;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 8px 12px;
+.projectName {
   font-size: 13px;
-  color: var(--text-primary);
-  font-family: inherit;
-  outline: none;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  font-weight: 600;
+  color: var(--text-1);
 }
 
-.search::placeholder { color: var(--text-muted); }
-
-.search:focus {
-  border-color: var(--accent-1);
-  box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+.count {
+  font-size: 11px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
 }
 
+/* ── Feed ──────────────────────────────── */
 .feed {
   flex: 1;
   overflow-y: auto;
-  padding: 16px 0 16px 20px;
-}
-
-/* ── Skeleton ── */
-.skeletons { display: flex; flex-direction: column; gap: 12px; }
-
-.skeletonCard {
-  display: flex;
-  gap: 14px;
-  padding-right: 20px;
-}
-
-.skeletonDot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  margin-top: 18px;
-}
-
-.skeletonBody {
-  flex: 1;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.skeletonLine {
-  height: 12px;
-  border-radius: var(--radius-sm);
-}
-
-/* ── Empty ── */
-.empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  text-align: center;
-  color: var(--text-muted);
-  gap: 8px;
-}
-
-.emptyIcon { font-size: 40px; margin-bottom: 8px; }
-.emptyHint { font-size: 12px; }
-.emptyHint code {
-  font-family: 'JetBrains Mono', monospace;
-  background: var(--surface-2);
-  padding: 1px 6px;
-  border-radius: var(--radius-sm);
-  font-size: 11px;
-  color: var(--accent-1);
 }

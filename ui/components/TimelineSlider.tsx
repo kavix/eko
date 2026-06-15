@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
-import type { Snapshot } from "./SnapshotCard";
+import type { Snapshot } from "@/lib/data";
 import styles from "./TimelineSlider.module.css";
 
 interface Props {
@@ -56,7 +56,7 @@ export default function TimelineSlider({ snapshots, selected, onSelect }: Props)
               className={`${styles.dot} ${isActive ? styles.dotActive : ""}`}
               style={{ left: `${pct}%` }}
               onClick={(e) => { e.stopPropagation(); handleClick(s); }}
-              title={s.message}
+              title={s.prompt}
             />
           );
         })}
@@ -66,7 +66,7 @@ export default function TimelineSlider({ snapshots, selected, onSelect }: Props)
 
       {selected && (
         <span className={styles.badge}>
-          {new Date(selected.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          {selected.timestamp}
           &nbsp;·&nbsp;#{selected.id}
         </span>
       )}

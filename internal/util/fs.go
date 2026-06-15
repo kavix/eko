@@ -14,7 +14,7 @@ type copyTask struct {
 	dst string
 }
 
-// CopyDir copies all files from src to dst concurrently, skipping ".vibe".
+// CopyDir copies all files from src to dst concurrently, skipping ".eko".
 //
 // Strategy:
 //  1. Walk the source tree serially to preserve the guarantee that parent
@@ -53,8 +53,8 @@ func CopyDir(src, dst string) error {
 			return err
 		}
 
-		// Skip .vibe (avoids infinite recursion into the snapshot store).
-		if info.IsDir() && filepath.Base(path) == ".vibe" {
+		// Skip .eko (avoids infinite recursion into the snapshot store).
+		if info.IsDir() && filepath.Base(path) == ".eko" {
 			return filepath.SkipDir
 		}
 

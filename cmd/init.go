@@ -10,9 +10,9 @@ import (
 
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "Initialize vibe project",
+	Short: "Initialize eko project",
 	Run: func(cmd *cobra.Command, args []string) {
-		os.MkdirAll(".vibe/snapshots", 0755)
+		os.MkdirAll(".eko/snapshots", 0755)
 		database := db.InitDB()
 		database.Exec(`
 			CREATE TABLE IF NOT EXISTS snapshots (
@@ -22,7 +22,7 @@ var initCmd = &cobra.Command{
 				created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 			)
 		`)
-		fmt.Println("Vibe initialized.")
+		fmt.Println("Eko initialized.")
 	},
 }
 

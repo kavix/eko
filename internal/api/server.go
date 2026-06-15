@@ -142,7 +142,7 @@ func diffSnapshots(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	db.QueryRow("SELECT path FROM snapshots WHERE id = ?", fromID).Scan(&fromPath)
 	db.QueryRow("SELECT path FROM snapshots WHERE id = ?", toID).Scan(&toPath)
 
-	diffs, err := buildDiff(fromPath, toPath)
+	diffs, err := BuildDiff(fromPath, toPath)
 	if err != nil {
 		jsonError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -154,8 +154,8 @@ func diffSnapshots(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 // Helpers
 // ---------------------------------------------------------------------------
 
-// buildDiff walks both snapshot dirs, collecting file pairs where content differs.
-func buildDiff(fromDir, toDir string) ([]DiffFile, error) {
+// BuildDiff walks both snapshot dirs, collecting file pairs where content differs.
+func BuildDiff(fromDir, toDir string) ([]DiffFile, error) {
 	seen := map[string]bool{}
 	var results []DiffFile
 

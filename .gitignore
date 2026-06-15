@@ -23,3 +23,12 @@ go.work.sum
 
 # env file
 .env
+
+# Eko CLI local data
+.eko/
+
+# Wails build outputs
+build/
+
+# Local binary
+eko

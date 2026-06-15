@@ -18,6 +18,17 @@
 
 ### Installation
 
+#### Homebrew (macOS)
+
+You can install Eko via Homebrew:
+
+```bash
+brew tap kavix/tap
+brew install eko
+```
+
+#### From Source
+
 ```bash
 go build -o eko main.go
 ```

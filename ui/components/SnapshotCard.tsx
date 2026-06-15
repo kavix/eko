@@ -1,106 +1,68 @@
 "use client";
-import { useState } from "react";
+import type { Snapshot } from "@/lib/data";
 import styles from "./SnapshotCard.module.css";
-
-export interface Snapshot {
-  id: string;
-  message: string;
-  path: string;
-  createdAt: string;
-  filesChanged: number;
-}
 
 interface Props {
   snapshot: Snapshot;
   index: number;
   isSelected: boolean;
-  onSelect: (s: Snapshot) => void;
-  onDiff: (s: Snapshot) => void;
-  onRestore: (s: Snapshot) => void;
+  onSelect: () => void;
+  onDiff: () => void;
+  onRestore: () => void;
 }
 
 export default function SnapshotCard({
   snapshot, index, isSelected, onSelect, onDiff, onRestore,
 }: Props) {
-  const [hovered, setHovered] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const time = new Date(snapshot.createdAt).toLocaleTimeString([], {
-    hour: "2-digit", minute: "2-digit",
-  });
-  const handleCopy = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-
-    await navigator.clipboard.writeText(snapshot.id);
-
-    setCopied(true);
-
-    setTimeout(() => {
-      setCopied(false);
-    }, 1500);
-  };
-
   return (
-    <div
-      id={`snapshot-${snapshot.id}`}
+    <article
+      id={`card-${snapshot.id}`}
       className={`${styles.card} ${isSelected ? styles.selected : ""}`}
-      style={{ animationDelay: `${index * 40}ms` }}
-      onClick={() => onSelect(snapshot)}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onClick={onSelect}
+      aria-selected={isSelected}
     >
-      {/* Timeline connector */}
-      <div className={styles.connector}>
-        <div className={`${styles.dot} ${isSelected ? styles.dotActive : ""}`} />
+      {/* Rail */}
+      <div className={styles.rail}>
+        <div className={styles.node} />
         <div className={styles.line} />
       </div>
 
-      {/* Card body */}
-      <div className={styles.body}>
-        <div className={styles.header}>
-          <span className={styles.time}>{time}</span>
-          <span className={`badge badge-purple ${styles.files}`}>
-            📄 {snapshot.filesChanged} files
+      {/* Content */}
+      <div className={styles.content}>
+        <div className={styles.meta}>
+          <time className={styles.time}>{snapshot.timestamp}</time>
+          <span className={`tag ${styles.fileCount}`}>
+            {snapshot.filesChanged.length} files
           </span>
         </div>
 
-        <p className={styles.message}>{snapshot.message}</p>
+        <h3 className={styles.prompt}>{snapshot.prompt}</h3>
+        <p className={styles.summary}>{snapshot.aiSummary}</p>
 
-        <div className={styles.idRow}>
-          <code className={styles.idChip}>#{snapshot.id}</code>
-
+        <div className={styles.actions}>
           <button
-            className="btn btn-ghost"
-            onClick={handleCopy}
-          >
-            {copied ? "Copied!" : "Copy"}
-          </button>
-        </div>
-
-        {/* Actions — slide in on hover/select */}
-        <div className={`${styles.actions} ${(hovered || isSelected) ? styles.actionsVisible : ""}`}>
-          <button
-            className="btn btn-ghost"
+            className="btn"
             id={`view-${snapshot.id}`}
-            onClick={(e) => { e.stopPropagation(); onSelect(snapshot); }}
+            onClick={(e) => { e.stopPropagation(); onSelect(); }}
           >
             View
           </button>
           <button
-            className="btn btn-ghost"
+            className="btn"
             id={`diff-${snapshot.id}`}
-            onClick={(e) => { e.stopPropagation(); onDiff(snapshot); }}
+            onClick={(e) => { e.stopPropagation(); onDiff(); }}
           >
             Diff
           </button>
           <button
             className="btn btn-primary"
             id={`restore-${snapshot.id}`}
-            onClick={(e) => { e.stopPropagation(); onRestore(snapshot); }}
+            onClick={(e) => { e.stopPropagation(); onRestore(); }}
           >
             Restore
           </button>
         </div>
       </div>
-    </div>
+    </article>
   );
 }

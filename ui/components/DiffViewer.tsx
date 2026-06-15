@@ -2,7 +2,8 @@
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import styles from "./DiffViewer.module.css";
-import type { Snapshot } from "./SnapshotCard";
+import type { Snapshot } from "@/lib/data";
+import { DiffSnapshots } from "@/lib/wailsjs/go/main/WailsApp";
 
 // Load Monaco only on the client side
 const MonacoDiffEditor = dynamic(
@@ -31,17 +32,31 @@ export default function DiffViewer({ fromSnapshot, toSnapshot, onClose }: Props)
   useEffect(() => {
     setLoading(true);
     setError("");
-    fetch(`/api/diff?from=${fromSnapshot.id}&to=${toSnapshot.id}`)
-      .then((r) => r.json())
-      .then((data: DiffFile[]) => {
-        setFiles(data);
-        setActiveFile(data[0] ?? null);
+
+    const loadDiff = async () => {
+      try {
+        if (typeof window !== "undefined" && (window as any).go) {
+          const data = await DiffSnapshots(fromSnapshot.id, toSnapshot.id);
+          setFiles(data);
+          setActiveFile(data[0] ?? null);
+        } else {
+          // REST API fallback
+          const res = await fetch(`/api/diff?from=${fromSnapshot.id}&to=${toSnapshot.id}`);
+          if (!res.ok) {
+            throw new Error(`API returned HTTP ${res.status}`);
+          }
+          const data: DiffFile[] = await res.json();
+          setFiles(data);
+          setActiveFile(data[0] ?? null);
+        }
+      } catch (e: any) {
+        setError(e.message || String(e));
+      } finally {
         setLoading(false);
-      })
-      .catch((e) => {
-        setError(e.message);
-        setLoading(false);
-      });
+      }
+    };
+
+    loadDiff();
   }, [fromSnapshot.id, toSnapshot.id]);
 
   return (

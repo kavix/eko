@@ -63,13 +63,13 @@ func TestCopyDir_nested(t *testing.T) {
 	}
 }
 
-// TestCopyDir_skipsVibe ensures the .vibe directory is never copied.
-func TestCopyDir_skipsVibe(t *testing.T) {
+// TestCopyDir_skipsEko ensures the .eko directory is never copied.
+func TestCopyDir_skipsEko(t *testing.T) {
 	src := t.TempDir()
 	dst := t.TempDir()
 
-	// Create a .vibe directory inside src — it should NOT appear in dst.
-	if err := os.MkdirAll(filepath.Join(src, ".vibe"), 0755); err != nil {
+	// Create a .eko directory inside src — it should NOT appear in dst.
+	if err := os.MkdirAll(filepath.Join(src, ".eko"), 0755); err != nil {
 		t.Fatal(err)
 	}
 	// Also add a normal file that SHOULD be copied.
@@ -81,8 +81,8 @@ func TestCopyDir_skipsVibe(t *testing.T) {
 		t.Fatalf("CopyDir returned error: %v", err)
 	}
 
-	if _, err := os.Stat(filepath.Join(dst, ".vibe")); !os.IsNotExist(err) {
-		t.Error(".vibe directory should not be copied to dst")
+	if _, err := os.Stat(filepath.Join(dst, ".eko")); !os.IsNotExist(err) {
+		t.Error(".eko directory should not be copied to dst")
 	}
 	if _, err := os.Stat(filepath.Join(dst, "real.txt")); err != nil {
 		t.Errorf("real.txt should have been copied: %v", err)

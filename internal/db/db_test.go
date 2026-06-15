@@ -8,12 +8,12 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// setupVibeDir creates a temp project root with a .vibe subdir,
+// setupEkoDir creates a temp project root with a .eko subdir,
 // chdirs into it, and returns the cleanup restore.
-func setupVibeDir(t *testing.T) {
+func setupEkoDir(t *testing.T) {
 	t.Helper()
 	dir := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(dir, ".vibe"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(dir, ".eko"), 0755); err != nil {
 		t.Fatal(err)
 	}
 	orig, _ := os.Getwd()
@@ -25,7 +25,7 @@ func setupVibeDir(t *testing.T) {
 
 // TestInitDB_opens verifies InitDB returns a non-nil, usable connection.
 func TestInitDB_opens(t *testing.T) {
-	setupVibeDir(t)
+	setupEkoDir(t)
 
 	conn := InitDB()
 	defer conn.Close()
@@ -40,7 +40,7 @@ func TestInitDB_opens(t *testing.T) {
 
 // TestInitDB_createSchema verifies the snapshots table can be created and queried.
 func TestInitDB_createSchema(t *testing.T) {
-	setupVibeDir(t)
+	setupEkoDir(t)
 
 	conn := InitDB()
 	defer conn.Close()
@@ -83,7 +83,7 @@ func TestInitDB_createSchema(t *testing.T) {
 
 // TestInitDB_multipleRows inserts several rows and verifies the count.
 func TestInitDB_multipleRows(t *testing.T) {
-	setupVibeDir(t)
+	setupEkoDir(t)
 
 	conn := InitDB()
 	defer conn.Close()
@@ -110,7 +110,7 @@ func TestInitDB_multipleRows(t *testing.T) {
 
 // TestInitDB_uniqueConstraint checks the PRIMARY KEY rejects duplicates.
 func TestInitDB_uniqueConstraint(t *testing.T) {
-	setupVibeDir(t)
+	setupEkoDir(t)
 
 	conn := InitDB()
 	defer conn.Close()
@@ -129,7 +129,7 @@ func TestInitDB_uniqueConstraint(t *testing.T) {
 // TestInitDB_fileCreated checks that the SQLite file is written to disk.
 func TestInitDB_fileCreated(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".vibe"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".eko"), 0755)
 	orig, _ := os.Getwd()
 	t.Cleanup(func() { os.Chdir(orig) })
 	os.Chdir(dir)
@@ -138,7 +138,7 @@ func TestInitDB_fileCreated(t *testing.T) {
 	conn.Exec("SELECT 1") // force file materialisation
 	conn.Close()
 
-	if _, err := os.Stat(filepath.Join(dir, ".vibe", "db.sqlite")); os.IsNotExist(err) {
-		t.Error(".vibe/db.sqlite was not created on disk")
+	if _, err := os.Stat(filepath.Join(dir, ".eko", "db.sqlite")); os.IsNotExist(err) {
+		t.Error(".eko/db.sqlite was not created on disk")
 	}
 }

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Eko — Visual Memory System",
-  description: "Time-travel through your AI coding sessions. Inspect, diff, and restore every snapshot.",
+  title: "Vibe Timeline — AI Coding History",
+  description: "A minimal timeline of AI coding decisions. Inspect, diff, and restore every snapshot.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
