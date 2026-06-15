@@ -13,7 +13,7 @@ import (
 	"eko/internal/snapshot"
 )
 
-// SnapshotRecord is the JSON-serialisable form of a stored snapshot.
+// SnapshotRecord is the JSON-serializable form of a stored snapshot.
 type SnapshotRecord struct {
 	ID          string `json:"id"`
 	Message     string `json:"message"`
