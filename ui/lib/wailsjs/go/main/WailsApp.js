@@ -14,10 +14,22 @@ export function GetSnapshot(arg1) {
   return window['go']['main']['WailsApp']['GetSnapshot'](arg1);
 }
 
+export function IsInitialized() {
+  return window['go']['main']['WailsApp']['IsInitialized']();
+}
+
+export function InitializeProject() {
+  return window['go']['main']['WailsApp']['InitializeProject']();
+}
+
 export function ListSnapshots() {
   return window['go']['main']['WailsApp']['ListSnapshots']();
 }
 
 export function RestoreSnapshot(arg1) {
   return window['go']['main']['WailsApp']['RestoreSnapshot'](arg1);
+}
+
+export function SaveSnapshot(arg1) {
+  return window['go']['main']['WailsApp']['SaveSnapshot'](arg1);
 }

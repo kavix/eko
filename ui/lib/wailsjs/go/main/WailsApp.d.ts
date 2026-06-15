@@ -9,6 +9,12 @@ export function GetProjectName():Promise<string>;
 
 export function GetSnapshot(arg1:string):Promise<api.SnapshotRecord>;
 
+export function IsInitialized():Promise<boolean>;
+
+export function InitializeProject():Promise<string>;
+
 export function ListSnapshots():Promise<Array<main.FrontendSnapshot>>;
 
 export function RestoreSnapshot(arg1:string):Promise<Record<string, string>>;
+
+export function SaveSnapshot(arg1:string):Promise<string>;

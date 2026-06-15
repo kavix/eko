@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"eko/internal/api"
+	"eko/internal/db"
 	"eko/internal/snapshot"
 	"fmt"
 	"os"
@@ -33,10 +34,78 @@ func (a *WailsApp) Startup(ctx context.Context) {
 	a.ctx = ctx
 }
 
+// IsInitialized checks if Eko is initialized in the current directory.
+func (a *WailsApp) IsInitialized() (bool, error) {
+	_, err := os.Stat(".eko/db.sqlite")
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return err == nil, nil
+}
+
+// InitializeProject creates the .eko directory structure and initializes the SQLite database.
+func (a *WailsApp) InitializeProject() (string, error) {
+	fmt.Println("➡️ InitializeProject called")
+	err := os.MkdirAll(".eko/snapshots", 0755)
+	if err != nil {
+		fmt.Println("❌ InitializeProject mkdir error:", err)
+		return "", err
+	}
+
+	if a.DB != nil {
+		a.DB.Close()
+	}
+
+	database := db.InitDB()
+	a.DB = database
+
+	_, err = database.Exec(`
+		CREATE TABLE IF NOT EXISTS snapshots (
+			id TEXT PRIMARY KEY,
+			message TEXT,
+			path TEXT,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)
+	`)
+	if err != nil {
+		fmt.Println("❌ InitializeProject DB exec error:", err)
+		return "", err
+	}
+	fmt.Println("⬅️ InitializeProject completed successfully")
+	return "Eko project initialized successfully.", nil
+}
+
+// SaveSnapshot captures the current directory state and registers the snapshot with a message.
+func (a *WailsApp) SaveSnapshot(message string) (string, error) {
+	fmt.Println("➡️ SaveSnapshot called with message:", message)
+	id, path, err := snapshot.CreateSnapshot()
+	if err != nil {
+		fmt.Println("❌ SaveSnapshot create snapshot error:", err)
+		return "", err
+	}
+	if message == "" {
+		message = "snapshot"
+	}
+	_, err = a.DB.Exec(
+		"INSERT INTO snapshots(id, message, path) VALUES (?, ?, ?)",
+		id,
+		message,
+		path,
+	)
+	if err != nil {
+		fmt.Println("❌ SaveSnapshot DB insert error:", err)
+		return "", err
+	}
+	fmt.Println("⬅️ SaveSnapshot completed successfully, created ID:", id)
+	return id, nil
+}
+
 // ListSnapshots returns all snapshots mapped to FrontendSnapshot format.
 func (a *WailsApp) ListSnapshots() ([]FrontendSnapshot, error) {
+	fmt.Println("➡️ ListSnapshots called")
 	rows, err := a.DB.Query("SELECT id, message, path, created_at FROM snapshots ORDER BY created_at DESC")
 	if err != nil {
+		fmt.Println("❌ ListSnapshots database query error:", err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -74,11 +143,15 @@ func (a *WailsApp) ListSnapshots() ([]FrontendSnapshot, error) {
 
 // GetProjectName returns the base name of the current workspace directory.
 func (a *WailsApp) GetProjectName() (string, error) {
+	fmt.Println("➡️ GetProjectName called")
 	wd, err := os.Getwd()
 	if err != nil {
+		fmt.Println("❌ GetProjectName error:", err)
 		return "eko", nil
 	}
-	return filepath.Base(wd), nil
+	name := filepath.Base(wd)
+	fmt.Println("⬅️ GetProjectName returning name:", name)
+	return name, nil
 }
 
 // GetSnapshot returns metadata of a single snapshot.

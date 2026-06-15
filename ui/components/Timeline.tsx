@@ -10,10 +10,11 @@ interface Props {
   onSelect: (s: Snapshot) => void;
   onDiff: (s: Snapshot) => void;
   onRestore: (s: Snapshot) => void;
+  onCreateSnapshot: () => void;
 }
 
 export default function Timeline({
-  projectName, snapshots, selectedId, onSelect, onDiff, onRestore,
+  projectName, snapshots, selectedId, onSelect, onDiff, onRestore, onCreateSnapshot,
 }: Props) {
   return (
     <section className={styles.panel}>
@@ -23,7 +24,24 @@ export default function Timeline({
           <span className="label">Timeline</span>
           <span className={styles.projectName}>{projectName}</span>
         </div>
-        <span className={styles.count}>{snapshots.length} snapshots</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <button
+            onClick={onCreateSnapshot}
+            style={{
+              background: "#38bdf8",
+              color: "#0f172a",
+              border: "none",
+              borderRadius: "6px",
+              padding: "6px 12px",
+              fontSize: "12px",
+              fontWeight: "bold",
+              cursor: "pointer",
+            }}
+          >
+            + New Snapshot
+          </button>
+          <span className={styles.count}>{snapshots.length} snapshots</span>
+        </div>
       </div>
 
       {/* Snapshot list */}
