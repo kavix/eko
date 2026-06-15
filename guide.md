@@ -6,23 +6,36 @@ Eko is an AI snapshot versioning tool designed to capture, inspect, diff, and re
 
 ## 1. Installation
 
-Depending on your use case, you can compile Eko in one of two modes:
+Depending on your use case, you can compile Eko in one of three ways:
 
-### Option A: Native Desktop App (Recommended)
-This compiles Eko with the native Wails visual UI window.
+### Option A: Standalone CLI + UI Binary (Recommended)
+This compiles a single binary `eko` containing both the CLI commands and the native visual UI.
+
+1. Build the React/Next.js frontend assets:
+   ```bash
+   (cd ui && npm run build)
+   ```
+2. Build the Go binary (requires Go, but does not require the Wails CLI):
+   ```bash
+   go build -o eko .
+   ```
+   *You can now run `./eko ui` or any other CLI command directly from this single binary.*
+
+### Option B: Native macOS App Bundle
+This packages Eko as a standard double-clickable macOS application bundle.
 
 1. Ensure you have the Wails CLI installed:
    ```bash
    go install github.com/wailsapp/wails/v2/cmd/wails@latest
    ```
-2. Build the application package:
+2. Build the application bundle:
    ```bash
    wails build
    ```
-   *Note: On macOS, this creates a native app bundle at `build/bin/eko.app`. You can copy the executable inside `/build/bin/eko.app/Contents/MacOS/eko` to your system path (e.g., `/usr/local/bin/eko`) to use the `eko` command globally.*
+   *Note: This creates a native app bundle at `build/bin/eko.app`. You can copy the executable inside `/build/bin/eko.app/Contents/MacOS/eko` to your system path (e.g., `/usr/local/bin/eko`) to use the `eko` command globally.*
 
-### Option B: Lightweight CLI Only
-This compiles only the command-line interface, skipping Wails dependencies. Ideal for servers, headless environments, or if you do not need the graphical interface.
+### Option C: Lightweight CLI Only
+This compiles only the command-line interface, skipping all GUI/Wails dependencies. Ideal for servers, headless environments, or if you do not want graphical components compiled in.
 
 1. Compile the binary with the `no_gui` build tag:
    ```bash
