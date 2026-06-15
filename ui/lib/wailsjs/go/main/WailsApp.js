@@ -6,12 +6,12 @@ export function DiffSnapshots(arg1, arg2) {
   return window['go']['main']['WailsApp']['DiffSnapshots'](arg1, arg2);
 }
 
-export function GetSnapshot(arg1) {
-  return window['go']['main']['WailsApp']['GetSnapshot'](arg1);
-}
-
 export function GetProjectName() {
   return window['go']['main']['WailsApp']['GetProjectName']();
+}
+
+export function GetSnapshot(arg1) {
+  return window['go']['main']['WailsApp']['GetSnapshot'](arg1);
 }
 
 export function ListSnapshots() {

@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 
 	"eko/cmd"
@@ -38,12 +39,18 @@ func run() {
 
 	fmt.Println("✦ Starting Eko Native UI...")
 
-	err := wails.Run(&options.App{
+	subFS, err := fs.Sub(assets, "ui/out")
+	if err != nil {
+		fmt.Println("Error loading embedded UI assets:", err)
+		os.Exit(1)
+	}
+
+	err = wails.Run(&options.App{
 		Title:  "Eko Visual Memory",
 		Width:  1200,
 		Height: 800,
 		AssetServer: &assetserver.Options{
-			Assets: assets,
+			Assets: subFS,
 		},
 		BackgroundColour: &options.RGBA{R: 15, G: 23, B: 42, A: 1}, // Slate-900 style background
 		OnStartup:        wailsApp.Startup,

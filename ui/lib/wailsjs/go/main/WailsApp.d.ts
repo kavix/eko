@@ -5,9 +5,9 @@ import {main} from '../models';
 
 export function DiffSnapshots(arg1:string,arg2:string):Promise<Array<api.DiffFile>>;
 
-export function GetSnapshot(arg1:string):Promise<api.SnapshotRecord>;
-
 export function GetProjectName():Promise<string>;
+
+export function GetSnapshot(arg1:string):Promise<api.SnapshotRecord>;
 
 export function ListSnapshots():Promise<Array<main.FrontendSnapshot>>;
 
