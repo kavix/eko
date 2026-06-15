@@ -5,6 +5,7 @@ package main
 import (
 	"fmt"
 	"io/fs"
+	"net/http"
 	"os"
 
 	"eko/cmd"
@@ -51,6 +52,28 @@ func run() {
 		Height: 800,
 		AssetServer: &assetserver.Options{
 			Assets: subFS,
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// Intercept Next.js App Router static prefetch requests
+				if r.URL.Query().Has("_rsc") {
+					path := r.URL.Path
+					if path == "/" || path == "" || path == "/index.html" {
+						content, err := fs.ReadFile(subFS, "index.txt")
+						if err == nil {
+							w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+							w.Write(content)
+							return
+						}
+					} else if path == "/_not-found" || path == "/_not-found.html" {
+						content, err := fs.ReadFile(subFS, "_not-found.txt")
+						if err == nil {
+							w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+							w.Write(content)
+							return
+						}
+					}
+				}
+				w.WriteHeader(http.StatusNotFound)
+			}),
 		},
 		BackgroundColour: &options.RGBA{R: 15, G: 23, B: 42, A: 1}, // Slate-900 style background
 		OnStartup:        wailsApp.Startup,
