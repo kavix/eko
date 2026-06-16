@@ -1,0 +1,7 @@
+services:
+  eko-ui:
+    image: eko-ui
+    build: ./ui
+    ports:
+      - "3000:80"
+
