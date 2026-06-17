@@ -14,7 +14,27 @@ type copyTask struct {
 	dst string
 }
 
-// CopyDir copies all files from src to dst concurrently, skipping ".eko".
+// ShouldIgnore reports whether a file or directory should be ignored by Eko.
+func ShouldIgnore(name string, isDir bool) bool {
+	if isDir {
+		switch name {
+		case ".eko", ".git", "node_modules", ".next", "build", "out", "dist":
+			return true
+		}
+	} else {
+		if exePath, err := os.Executable(); err == nil {
+			if name == filepath.Base(exePath) {
+				return true
+			}
+		}
+		if name == "eko" || name == "eko.exe" {
+			return true
+		}
+	}
+	return false
+}
+
+// CopyDir copies all files from src to dst concurrently, skipping ignored items.
 //
 // Strategy:
 //  1. Walk the source tree serially to preserve the guarantee that parent
@@ -53,9 +73,11 @@ func CopyDir(src, dst string) error {
 			return err
 		}
 
-		// Skip .eko (avoids infinite recursion into the snapshot store).
-		if info.IsDir() && filepath.Base(path) == ".eko" {
-			return filepath.SkipDir
+		if ShouldIgnore(filepath.Base(path), info.IsDir()) {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
 		}
 
 		// Skip the destination directory itself.

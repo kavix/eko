@@ -198,3 +198,53 @@ func TestRestoreSnapshot_preservesEko(t *testing.T) {
 		t.Error(".eko directory should be preserved after RestoreSnapshot")
 	}
 }
+
+// TestCreateSnapshot_ignoresFiles ensures common files/directories like .git and node_modules are ignored.
+func TestCreateSnapshot_ignoresFiles(t *testing.T) {
+	dir := setupProject(t)
+
+	// Create some folders/files that should be ignored
+	os.MkdirAll(filepath.Join(dir, ".git"), 0755)
+	os.WriteFile(filepath.Join(dir, ".git", "config"), []byte("[core]"), 0644)
+	os.MkdirAll(filepath.Join(dir, "node_modules"), 0755)
+	os.WriteFile(filepath.Join(dir, "node_modules", "some-dep"), []byte("some-dep"), 0644)
+	os.WriteFile(filepath.Join(dir, "eko"), []byte("binary content"), 0755)
+
+	_, snapPath, err := CreateSnapshot()
+	if err != nil {
+		t.Fatalf("CreateSnapshot error: %v", err)
+	}
+
+	full := filepath.Join(dir, snapPath)
+	for _, ign := range []string{".git", "node_modules", "eko"} {
+		if _, err := os.Stat(filepath.Join(full, ign)); !os.IsNotExist(err) {
+			t.Errorf("%s should not be copied into snapshot", ign)
+		}
+	}
+}
+
+// TestRestoreSnapshot_preservesIgnored checks that ignored folders/files are preserved during restore.
+func TestRestoreSnapshot_preservesIgnored(t *testing.T) {
+	dir := setupProject(t)
+
+	// Create some folders/files that should be ignored
+	os.MkdirAll(filepath.Join(dir, ".git"), 0755)
+	os.MkdirAll(filepath.Join(dir, "node_modules"), 0755)
+	os.WriteFile(filepath.Join(dir, "eko"), []byte("binary content"), 0755)
+
+	_, snapPath, err := CreateSnapshot()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	full := filepath.Join(dir, snapPath)
+	if err := RestoreSnapshot(full); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, ign := range []string{".git", "node_modules", "eko"} {
+		if _, err := os.Stat(filepath.Join(dir, ign)); os.IsNotExist(err) {
+			t.Errorf("%s directory should be preserved after RestoreSnapshot", ign)
+		}
+	}
+}

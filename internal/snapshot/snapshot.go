@@ -55,10 +55,10 @@ func RestoreSnapshot(path string) error {
 	}
 
 	// Collect top-level entries that should be removed.
-	// We always keep the .eko directory so snapshot metadata is preserved.
+	// We always keep the .eko directory and other ignored folders/files so metadata/dependencies are preserved.
 	var toRemove []string
 	for _, e := range entries {
-		if e.Name() != ekoDir {
+		if !util.ShouldIgnore(e.Name(), e.IsDir()) {
 			toRemove = append(toRemove, e.Name())
 		}
 	}
