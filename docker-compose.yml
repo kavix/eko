@@ -5,3 +5,12 @@ services:
     ports:
       - "3000:80"
 
+  eko-cli:
+    image: eko-cli
+    build: ./
+    volumes:
+      - eko-data:/.eko
+
+volumes:
+  eko-data:
+
