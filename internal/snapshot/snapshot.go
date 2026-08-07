@@ -51,6 +51,28 @@ func generateID() (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
+// PendingRemovals returns the top-level entries in the working directory that
+// RestoreSnapshot would delete, in directory order.
+//
+// RestoreSnapshot calls this to build its own delete list, so anything shown to the
+// user from here is exactly what will be removed — the two cannot drift apart.
+func PendingRemovals() ([]string, error) {
+	entries, err := os.ReadDir(".")
+	if err != nil {
+		return nil, err
+	}
+
+	// We always keep the .eko directory and other ignored folders/files so
+	// metadata/dependencies are preserved.
+	var toRemove []string
+	for _, e := range entries {
+		if !util.ShouldIgnore(e.Name(), e.IsDir()) {
+			toRemove = append(toRemove, e.Name())
+		}
+	}
+	return toRemove, nil
+}
+
 // RestoreSnapshot reverts the working directory to the state captured in path.
 //
 // The restoration happens in two phases:
@@ -62,19 +84,13 @@ func generateID() (string, error) {
 //
 //  2. (Parallel copy) util.CopyDir copies the snapshot tree back into ".", also using
 //     internal concurrency for large directory trees.
+//
+// This is unconditionally destructive. Callers are responsible for confirming with
+// the user first — `eko restore` does that unless --yes is passed.
 func RestoreSnapshot(path string) error {
-	entries, err := os.ReadDir(".")
+	toRemove, err := PendingRemovals()
 	if err != nil {
 		return err
-	}
-
-	// Collect top-level entries that should be removed.
-	// We always keep the .eko directory and other ignored folders/files so metadata/dependencies are preserved.
-	var toRemove []string
-	for _, e := range entries {
-		if !util.ShouldIgnore(e.Name(), e.IsDir()) {
-			toRemove = append(toRemove, e.Name())
-		}
 	}
 
 	// Phase 1: delete concurrently; capture the first error via atomic pointer swap.
