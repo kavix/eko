@@ -1281,3 +1281,91 @@ func TestCleanCommand_nonAtomicFailureReportsProgress(t *testing.T) {
 		t.Errorf("expected only the removed snapshot's row to be gone, got %v", got)
 	}
 }
+
+// --- #93: a failed insert must not strand the snapshot directory ------------
+
+// countSnapshotDirs returns the number of entries under .eko/snapshots.
+func countSnapshotDirs(t *testing.T) int {
+	t.Helper()
+	entries, err := os.ReadDir(filepath.Join(".eko", "snapshots"))
+	if errors.Is(err, os.ErrNotExist) {
+		return 0
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	return len(entries)
+}
+
+// breakSnapshotInsert makes save's INSERT fail deterministically by recreating the
+// snapshots table with an extra NOT NULL column that the INSERT does not supply.
+//
+// The issue reproduces this with `chmod 444` on the database, which is faithful but not
+// portable: a read-only file is bypassed when the test process runs as root, which is
+// common in CI containers, and the test would then silently pass for the wrong reason.
+// A constraint violation fails the same way for every user. MigrateDB's
+// CREATE TABLE IF NOT EXISTS leaves this schema alone, and its ALTER TABLE error is
+// already swallowed, so the table survives InitDB intact.
+func breakSnapshotInsert(t *testing.T) {
+	t.Helper()
+	database, err := sql.Open("sqlite3", filepath.Join(".eko", "db.sqlite"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer database.Close()
+	if _, err := database.Exec(`
+		DROP TABLE IF EXISTS snapshots;
+		CREATE TABLE snapshots (
+			id TEXT PRIMARY KEY,
+			message TEXT,
+			path TEXT,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			summary TEXT,
+			must_be_supplied TEXT NOT NULL
+		)`); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestSaveCommand_failedInsertLeavesNoOrphanDirectory(t *testing.T) {
+	dir := setupTestDir(t)
+	if err := initCmd.RunE(initCmd, []string{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "hello.txt"), []byte("hello world"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// A good save first, so the test proves the failed one is cleaned up rather than
+	// that nothing was ever written.
+	if err := saveCmd.RunE(saveCmd, []string{}); err != nil {
+		t.Fatal(err)
+	}
+	if got := countSnapshotDirs(t); got != 1 {
+		t.Fatalf("expected 1 snapshot directory after a good save, got %d", got)
+	}
+
+	breakSnapshotInsert(t)
+
+	err := saveCmd.RunE(saveCmd, []string{})
+	if err == nil {
+		t.Fatal("expected save to fail once the insert cannot succeed")
+	}
+	if !strings.Contains(err.Error(), "failed to save snapshot to db") {
+		t.Errorf("expected the db error to survive cleanup, got %q", err)
+	}
+
+	// The whole point of #93: the directory the failed save wrote must be gone, not
+	// stranded with no row pointing at it.
+	if got := countSnapshotDirs(t); got != 1 {
+		t.Errorf("expected the failed save to leave no orphan directory (still 1), got %d", got)
+	}
+
+	// And a retry against the same broken database must not accumulate more.
+	if err := saveCmd.RunE(saveCmd, []string{}); err == nil {
+		t.Fatal("expected the retry to fail too")
+	}
+	if got := countSnapshotDirs(t); got != 1 {
+		t.Errorf("every retry adds an orphan: expected 1 directory, got %d", got)
+	}
+}
