@@ -6,6 +6,8 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -29,15 +31,31 @@ func CreateSnapshot() (string, string, error) {
 	}
 
 	base := ekoDir + "/snapshots/" + id
-	err = util.CopyDir(".", base)
-	if err != nil {
-		return "", "", err
+	if err := util.CopyDir(".", base); err != nil {
+		return "", "", discardPartial(base, err)
 	}
-	err = captureEnvVars(base)
-	if err != nil {
-		return "", "", err
+	if err := captureEnvVars(base); err != nil {
+		return "", "", discardPartial(base, err)
 	}
 	return id, base, nil
+}
+
+// discardPartial removes a snapshot directory that was created but never completed, and
+// returns the error that caused the abort.
+//
+// Without this, a CreateSnapshot that fails after util.CopyDir has begun leaves the
+// partial tree under .eko/snapshots/<id>/ with nothing pointing at it: the id and path
+// are not returned to the caller, so nothing can reference or remove it, and `eko clean`
+// only ever walks snapshots recorded in the database (#93).
+//
+// A cleanup failure is joined to the original error rather than replacing it. The reason
+// the snapshot aborted is what the user needs; that a leftover directory could not be
+// removed is extra, and swallowing either one loses information.
+func discardPartial(base string, cause error) error {
+	if rmErr := os.RemoveAll(base); rmErr != nil {
+		return errors.Join(cause, fmt.Errorf("could not remove partial snapshot %s: %w", base, rmErr))
+	}
+	return cause
 }
 
 // generateID returns a random 8-character hexadecimal string used as a snapshot identifier.

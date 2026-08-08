@@ -5,7 +5,9 @@ import (
 	"eko/internal/ai"
 	"eko/internal/db"
 	"eko/internal/snapshot"
+	"errors"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -68,7 +70,21 @@ used with the restore command to revert to this state.`,
 			path,
 			summaryText,
 		); err != nil {
-			return fmt.Errorf("failed to save snapshot to db: %w", err)
+			// The snapshot tree is already on disk at this point, and the row that would
+			// have made it reachable does not exist. Leaving it there strands the bytes:
+			// `eko history` cannot list it, `eko restore <id>` fails with "snapshot not
+			// found", and `eko clean` only walks snapshots recorded in the database, so it
+			// never sees an orphan directory either. Every retry against a still-unwritable
+			// database would add another one (#93).
+			//
+			// Removing it here keeps `save` all-or-nothing without changing the existing
+			// write-then-insert order, so a partially-failed save leaves behind exactly what
+			// it did before this fix: nothing.
+			dbErr := fmt.Errorf("failed to save snapshot to db: %w", err)
+			if rmErr := os.RemoveAll(path); rmErr != nil {
+				return errors.Join(dbErr, fmt.Errorf("could not remove orphaned snapshot %s: %w", path, rmErr))
+			}
+			return dbErr
 		}
 
 		fmt.Println("Snapshot saved:", id)
