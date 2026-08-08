@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"eko/internal/db"
+	"eko/internal/snapshot"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -217,7 +218,9 @@ func TestRestoreCommand(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Run restore
+	// Run restore. Restore now confirms before deleting, so a non-interactive
+	// caller has to opt in explicitly — the same thing a script would do.
+	withRestoreYes(t, true)
 	_ = restoreCmd.RunE(restoreCmd, []string{id})
 
 	// Check file restored to version 1
@@ -227,6 +230,221 @@ func TestRestoreCommand(t *testing.T) {
 	}
 	if string(content) != "hello version 1" {
 		t.Errorf("expected content to be restored to 'hello version 1', got %q", string(content))
+	}
+}
+
+// withRestoreYes sets the --yes flag for one test and restores it afterwards, so
+// the package-level flag cannot leak between tests.
+func withRestoreYes(t *testing.T, v bool) {
+	t.Helper()
+	prev := restoreYes
+	restoreYes = v
+	t.Cleanup(func() { restoreYes = prev })
+}
+
+// seedSnapshot initialises a project, saves one snapshot of hello.txt, then dirties
+// the file. Returns the snapshot id and the directory.
+func seedSnapshot(t *testing.T) (string, string) {
+	t.Helper()
+	dir := setupTestDir(t)
+	_ = initCmd.RunE(initCmd, []string{})
+	if err := os.WriteFile(filepath.Join(dir, "hello.txt"), []byte("saved"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	_ = saveCmd.RunE(saveCmd, []string{})
+
+	database := db.InitDB()
+	var id string
+	err := database.QueryRow("SELECT id FROM snapshots LIMIT 1").Scan(&id)
+	database.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.WriteFile(filepath.Join(dir, "hello.txt"), []byte("unsaved work"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	return id, dir
+}
+
+// runRestoreWith drives restoreCmd with a scripted answer on its input stream.
+func runRestoreWith(t *testing.T, id, answer string) (string, error) {
+	t.Helper()
+	var out bytes.Buffer
+	restoreCmd.SetOut(&out)
+	restoreCmd.SetIn(strings.NewReader(answer))
+	t.Cleanup(func() { restoreCmd.SetOut(nil); restoreCmd.SetIn(nil) })
+	err := restoreCmd.RunE(restoreCmd, []string{id})
+	return out.String(), err
+}
+
+// The point of issue #61: declining must leave the working directory untouched.
+func TestRestoreCommand_declinedLeavesWorkingDirectoryIntact(t *testing.T) {
+	withRestoreYes(t, false)
+	id, dir := seedSnapshot(t)
+
+	out, err := runRestoreWith(t, id, "n\n")
+	if err != nil {
+		t.Fatalf("declining should not be an error, got %v", err)
+	}
+	content, readErr := os.ReadFile(filepath.Join(dir, "hello.txt"))
+	if readErr != nil {
+		t.Fatal(readErr)
+	}
+	if string(content) != "unsaved work" {
+		t.Errorf("declining must not touch the file; got %q", string(content))
+	}
+	if !strings.Contains(out, "Nothing was deleted") {
+		t.Errorf("expected a cancellation message, got %q", out)
+	}
+}
+
+// A bare Enter is the default, and the default must be "no".
+func TestRestoreCommand_emptyAnswerCancels(t *testing.T) {
+	withRestoreYes(t, false)
+	id, dir := seedSnapshot(t)
+
+	if _, err := runRestoreWith(t, id, "\n"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	content, _ := os.ReadFile(filepath.Join(dir, "hello.txt"))
+	if string(content) != "unsaved work" {
+		t.Errorf("a bare Enter must cancel; got %q", string(content))
+	}
+}
+
+func TestRestoreCommand_confirmedRestores(t *testing.T) {
+	withRestoreYes(t, false)
+	id, dir := seedSnapshot(t)
+
+	out, err := runRestoreWith(t, id, "y\n")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	content, _ := os.ReadFile(filepath.Join(dir, "hello.txt"))
+	if string(content) != "saved" {
+		t.Errorf("confirming should restore; got %q", string(content))
+	}
+	// The prompt must name what it is about to delete, or it is not informed consent.
+	if !strings.Contains(out, "hello.txt") {
+		t.Errorf("prompt should list the entries it will delete, got %q", out)
+	}
+}
+
+// The prompt must list exactly what RestoreSnapshot deletes — no drift.
+func TestRestoreCommand_promptListsExactlyWhatWouldBeDeleted(t *testing.T) {
+	withRestoreYes(t, false)
+	id, dir := seedSnapshot(t)
+	if err := os.WriteFile(filepath.Join(dir, "extra.txt"), []byte("x"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	pending, err := snapshot.PendingRemovals()
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := runRestoreWith(t, id, "n\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range pending {
+		if !strings.Contains(out, name) {
+			t.Errorf("prompt omitted %q, which restore would have deleted; out=%q", name, out)
+		}
+	}
+	for _, line := range strings.Split(out, "\n") {
+		if strings.TrimSpace(line) == ".eko" {
+			t.Errorf(".eko is preserved by restore and must not be listed as a deletion")
+		}
+	}
+}
+
+// A piped stdin — `eko restore <id> < script` or a CI runner — must fail rather than
+// proceed or hang. A pipe is used deliberately: os.DevNull is a *character device* on
+// Unix, so it does not exercise the non-terminal branch (see the EOF test below).
+func TestRestoreCommand_nonTTYWithoutYesRefuses(t *testing.T) {
+	withRestoreYes(t, false)
+	id, dir := seedSnapshot(t)
+
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+	w.Close() // no writer: a pipe, and not a terminal
+	restoreCmd.SetIn(r)
+	t.Cleanup(func() { restoreCmd.SetIn(nil) })
+
+	err = restoreCmd.RunE(restoreCmd, []string{id})
+	if !errors.Is(err, errRestoreNeedsTTY) {
+		t.Fatalf("expected errRestoreNeedsTTY, got %v", err)
+	}
+	content, _ := os.ReadFile(filepath.Join(dir, "hello.txt"))
+	if string(content) != "unsaved work" {
+		t.Errorf("a refused restore must not delete anything; got %q", string(content))
+	}
+}
+
+// /dev/null reports as a character device, so it reaches the prompt and reads EOF.
+// That must cancel, never proceed — an empty answer is not consent.
+func TestRestoreCommand_devNullReadsAsEOFAndCancels(t *testing.T) {
+	withRestoreYes(t, false)
+	id, dir := seedSnapshot(t)
+
+	devNull, err := os.Open(os.DevNull)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer devNull.Close()
+	restoreCmd.SetIn(devNull)
+	t.Cleanup(func() { restoreCmd.SetIn(nil) })
+
+	if err := restoreCmd.RunE(restoreCmd, []string{id}); err != nil {
+		t.Fatalf("EOF should cancel cleanly, got %v", err)
+	}
+	content, _ := os.ReadFile(filepath.Join(dir, "hello.txt"))
+	if string(content) != "unsaved work" {
+		t.Errorf("EOF must not be read as consent; got %q", string(content))
+	}
+}
+
+// --yes keeps scripting working without a terminal.
+func TestRestoreCommand_yesFlagSkipsPromptWithoutTTY(t *testing.T) {
+	withRestoreYes(t, true)
+	id, dir := seedSnapshot(t)
+
+	devNull, err := os.Open(os.DevNull)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer devNull.Close()
+	restoreCmd.SetIn(devNull)
+	t.Cleanup(func() { restoreCmd.SetIn(nil) })
+
+	if err := restoreCmd.RunE(restoreCmd, []string{id}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	content, _ := os.ReadFile(filepath.Join(dir, "hello.txt"))
+	if string(content) != "saved" {
+		t.Errorf("--yes should restore without prompting; got %q", string(content))
+	}
+}
+
+// A missing snapshot must fail before anything is deleted or prompted.
+func TestRestoreCommand_unknownIDFailsBeforePrompting(t *testing.T) {
+	withRestoreYes(t, false)
+	_, dir := seedSnapshot(t)
+
+	out, err := runRestoreWith(t, "nope1234", "y\n")
+	if err == nil {
+		t.Fatal("expected an error for an unknown snapshot id")
+	}
+	if strings.Contains(out, "Continue?") {
+		t.Errorf("must not prompt for a snapshot that does not exist, got %q", out)
+	}
+	content, _ := os.ReadFile(filepath.Join(dir, "hello.txt"))
+	if string(content) != "unsaved work" {
+		t.Errorf("nothing should have been touched; got %q", string(content))
 	}
 }
 
